@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useState,useEffect} from 'react'
 import { Chart } from "react-google-charts";
 import {AiFillLike,AiFillDislike} from "react-icons/ai";
 import {BsFillEmojiNeutralFill} from "react-icons/bs";
@@ -13,19 +13,68 @@ const styles = {
 const BaseURI = "http://127.0.0.1:5000/api/video";
 
 const App = () => {
-  const [videoID,setVideoID] = useState();
+  const [url,setUrl] = useState("https://www.youtube.com/watch?v=cTY4Yo2SR2o&ab_channel=NikeSoccer");
   const [error,setError] = useState("");
   const [loading,setLoading] = useState(false);
   const [data,setData] = useState(null);
 
+  useEffect(()=>{
+    const u = new URL(url);
+    const params = new URLSearchParams(u.search);
+    
+    if(!params.has("v")){
+      setError("Bad Url, please try a valid youtube video url");
+      return;
+    }
+
+    const videoID = params.get("v");
+
+
+    fetch(BaseURI,{
+      method : "POST",
+      headers : {
+        'Content-Type' : "application/json"
+      },
+      body : JSON.stringify({videoID})
+    }).then(res => res.json())
+      .then(dt => {
+        setLoading(false);
+
+        console.log(dt);
+        if(dt.error){
+          setError(dt.error)
+        }else{
+        
+          setData(dt)
+        }
+      }).catch(err => {
+        setLoading(false);
+        setData(null);
+        setError("sorry, oups something went wrong. Please verify your Video ID and Try Again");
+        console.error(err);
+      })
+    
+  },[]);
+
   const processVideo = e =>{
     e.preventDefault();
 
-    if(!videoID || !videoID.trim().length)
+    if(!url || !url.trim().length)
       return;
 
     setLoading(true);
     setData(null);
+
+    const u = new URL(url);
+    const params = new URLSearchParams(u.search);
+
+    if(!params.has("v")){
+      setError("Bad Url, please try a valid youtube video url");
+      return;
+    }
+
+    const videoID = params.get("v");
+
 
     fetch(BaseURI,{
       method : "POST",
@@ -70,24 +119,24 @@ const App = () => {
             </div>
             <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2'>
               <form onSubmit={processVideo} className='max-w-lg m-auto shadow-2xl'>
-                  <input style={{width:'400px'}} onChange={e => setVideoID(e.target.value)} className='text-gray-700 py-4 px-4 rounded-l-md' placeholder='Enter youtube video ID here: e.g : 366gtuFa9V4' type="text" required/>
+                  <input style={{width:'400px'}} onChange={e => setUrl(e.target.value)} className='text-gray-700 py-4 px-4 rounded-l-md' placeholder='Enter youtube video url here.' type="text" required/>
                   <input className='cursor-pointer rounded-r-md py-4 px-4 bg-red-600' type="submit" value="ok"/>
               </form>
             </div>
           </header>
       </div>
       {data != null && <main className='max-w-4xl m-auto my-20'>
-        <div>
-          <h2 className='text-center text-xl font-bold text-gray-700'>Donut Chart showing the polarity labels of comments</h2>
-            <Chart
-            chartType="PieChart"
-            width="100%"
-            height="400px"
-            data={data.bar_chart_data}
-            options={options}
-          />
-        </div>
-        <div>
+      { data.bar_chart_data.length > 0 &&  <div>
+            <h2 className='text-center text-xl font-bold text-gray-700'>Donut Chart showing the polarity labels of comments</h2>
+              <Chart
+              chartType="PieChart"
+              width="100%"
+              height="400px"
+              data={data.bar_chart_data}
+              options={options}
+            />
+          </div>}
+      { data.histogramm_data.length > 0 && <div>
             <h2 className='text-center text-xl font-bold text-gray-700'>Distibution of polarity score accross the comments of your video</h2>
             <Chart
               chartType="Histogram"
@@ -96,11 +145,10 @@ const App = () => {
               data={[["Label","score"],...data.histogramm_data]}
               options={{
                 legend: { position: "none" },
-              }}
-        />
-        </div>
+              }}/>
+        </div>}
         <div className='space-y-4'>
-          <details className='p-4 bg-gray-50 rounded text-gray-700'>
+         { data.top_comments.length > 0 && <details className='p-4 bg-gray-50 rounded text-gray-700'>
             <summary className='cursor-pointer'>Top 5 best comments based on polarity score</summary>
             <ul className='p-4 space-y-2'>
               {data.top_comments.map((c,i)=>{
@@ -125,8 +173,8 @@ const App = () => {
                 </li>
               })}
             </ul>
-          </details>
-          <details className='p-4 bg-gray-50 rounded text-gray-700'>
+          </details>}
+          {data.worse_comments.length > 0 && <details className='p-4 bg-gray-50 rounded text-gray-700'>
             <summary className='cursor-pointer'>Top 5 worse comments based on polarity score</summary>
             <ul className='p-4 space-y-2'>
               {data.worse_comments.map((c,i)=>{
@@ -151,7 +199,7 @@ const App = () => {
                 </li>
               })}
             </ul>
-          </details>
+          </details>}
         </div>
       </main>}
     </div>
