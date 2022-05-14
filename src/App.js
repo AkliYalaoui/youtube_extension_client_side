@@ -1,209 +1,153 @@
-import {useState,useEffect} from 'react'
-import { Chart } from "react-google-charts";
-import {AiFillLike,AiFillDislike} from "react-icons/ai";
-import {BsFillEmojiNeutralFill} from "react-icons/bs";
+import { useState } from "react";
+import NavBar from "./components/NavBar";
+import Loading from "./components/Loading";
+import Alert from "./components/Alert";
+import Comments from "./components/Comments";
+import Histogram from "./components/Histogram";
+import DonutChart from "./components/DonutChart";
 
 const styles = {
-  backgroundImage:"url('bg.jpg')", 
-  backgroundRepeat:"no-repeat",
-  backgroundSize:"cover",
-  height:"80vh"
+  backgroundImage: "url('bg.jpg')",
+  backgroundRepeat: "no-repeat",
+  backgroundSize: "cover",
+  height: "80vh",
 };
 
-const BaseURI = "http://127.0.0.1:5000/api/video";
+const BaseURI = "https://chupacabra-api.herokuapp.com/api/video";
 
 const App = () => {
-  const [url,setUrl] = useState("https://www.youtube.com/watch?v=cTY4Yo2SR2o&ab_channel=NikeSoccer");
-  const [error,setError] = useState("");
-  const [loading,setLoading] = useState(false);
-  const [data,setData] = useState(null);
+  const [url, setUrl] = useState(
+    "https://www.youtube.com/watch?v=-nS9n7_OVWo&ab_channel=FootballskillzUnleashed"
+  );
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [data, setData] = useState(null);
 
-  useEffect(()=>{
-    const u = new URL(url);
-    const params = new URLSearchParams(u.search);
-    
-    if(!params.has("v")){
-      setError("Bad Url, please try a valid youtube video url");
-      return;
-    }
-
-    const videoID = params.get("v");
-
-
-    fetch(BaseURI,{
-      method : "POST",
-      headers : {
-        'Content-Type' : "application/json"
-      },
-      body : JSON.stringify({videoID})
-    }).then(res => res.json())
-      .then(dt => {
-        setLoading(false);
-
-        console.log(dt);
-        if(dt.error){
-          setError(dt.error)
-        }else{
-        
-          setData(dt)
-        }
-      }).catch(err => {
-        setLoading(false);
-        setData(null);
-        setError("sorry, oups something went wrong. Please verify your Video ID and Try Again");
-        console.error(err);
-      })
-    
-  },[]);
-
-  const processVideo = e =>{
+  const processVideo = (e) => {
     e.preventDefault();
 
-    if(!url || !url.trim().length)
-      return;
+    if (!url || !url.trim().length) return;
 
     setLoading(true);
     setData(null);
 
-    const u = new URL(url);
-    const params = new URLSearchParams(u.search);
+    let params = {};
+    try{
+      const u = new URL(url);
+      params = new URLSearchParams(u.search);
+    }catch(err){
+      console.error(err);
+      setLoading(false);
+      alert("Please provide a valid youtube video url");
+      return;
+    }
 
-    if(!params.has("v")){
+    if (!params.has("v")) {
       setError("Bad Url, please try a valid youtube video url");
       return;
     }
 
     const videoID = params.get("v");
 
-
-    fetch(BaseURI,{
-      method : "POST",
-      headers : {
-        'Content-Type' : "application/json"
+    fetch(BaseURI, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
       },
-      body : JSON.stringify({videoID})
-    }).then(res => res.json())
-      .then(dt => {
+      body: JSON.stringify({ videoID }),
+    })
+      .then((res) => res.json())
+      .then((dt) => {
         setLoading(false);
-
         console.log(dt);
-        if(dt.error){
-          setError(dt.error)
-        }else{
-        
-          setData(dt)
+        if (dt.error) {
+          setError(dt.error);
+          alert(dt.error);
+        } else {
+          setData(dt);
         }
-      }).catch(err => {
+      })
+      .catch((err) => {
         setLoading(false);
         setData(null);
-        setError("sorry, oups something went wrong. Please verify your Video ID and Try Again");
+        setError(
+          "sorry, oups something went wrong. Please verify your Video ID and Try Again"
+        );
         console.error(err);
-      })
-    
-  };
-  //366gtuFa9V4
-  const options = {
-    pieHole: 0.4,
-    is3D: false,
+        alert("sorry, oups something went wrong. Please verify your Video ID and Try Again");
+      });
   };
 
   return (
     <div>
-      <div className='relative' style={styles}>
-        <div className='absolute top-0 left-0 h-full w-full bg-gray-900 bg-opacity-70'></div>
-          <header className='z-10 text-white relative h-full'>
-            <div className='shadow-xl'>
-              <nav className='flex p-4 max-w-6xl m-auto'>
-                <h2 className='text-3xl italic font-bold text-red-600'>YT<sub>analyzer</sub></h2>
-              </nav>
+      <div className="relative" style={styles}>
+        <div className="absolute top-0 left-0 h-full w-full bg-gray-900 bg-opacity-80"></div>
+        <header className="z-10 text-white relative h-full">
+          <div className="shadow-xl">
+            <NavBar/>
+          </div>
+          <div className=" mt-20">
+            <div className="text-center space-y-4 mb-12">
+              <h1 className="text-5xl font-semibold">How Useful Is Your Video To The Audience ?</h1>
+              <p className="text-lg">discover it right now</p>
             </div>
-            <div className='absolute top-1/2 left-1/2 transform -translate-x-1/2'>
-              <form onSubmit={processVideo} className='max-w-lg m-auto shadow-2xl'>
-                  <input style={{width:'400px'}} onChange={e => setUrl(e.target.value)} className='text-gray-700 py-4 px-4 rounded-l-md' placeholder='Enter youtube video url here.' type="text" required/>
-                  <input className='cursor-pointer rounded-r-md py-4 px-4 bg-red-600' type="submit" value="ok"/>
-              </form>
-            </div>
-          </header>
+            <form
+              onSubmit={processVideo}
+              className="flex justify-center items-center shadow-2xl"
+            >
+              <div>
+                <input
+                  style={{ width: "610px" }}
+                  onChange={(e) => setUrl(e.target.value)}
+                  className="text-gray-700 py-4 px-4 rounded-l-md"
+                  placeholder="Enter youtube video url here."
+                  type="text"
+                  required
+                />
+                <input
+                  className="cursor-pointer rounded-r-md py-4 px-4 bg-blue-600"
+                  type="submit"
+                  value="ok"
+                />
+              </div>
+            </form>
+              <p className="text-center my-2 opacity-50">e.g : https://www.youtube.com/watch?v=-nS9n7_OVWo&ab_channel=FootballskillzUnleashed</p>
+          </div>
+        </header>
       </div>
-      {data != null && <main className='max-w-4xl m-auto my-20'>
-      { data.bar_chart_data.length > 0 &&  <div>
-            <h2 className='text-center text-xl font-bold text-gray-700'>Donut Chart showing the polarity labels of comments</h2>
-              <Chart
-              chartType="PieChart"
-              width="100%"
-              height="400px"
-              data={data.bar_chart_data}
-              options={options}
-            />
-          </div>}
-      { data.histogramm_data.length > 0 && <div>
-            <h2 className='text-center text-xl font-bold text-gray-700'>Distibution of polarity score accross the comments of your video</h2>
-            <Chart
-              chartType="Histogram"
-              width="100%"
-              height="400px"
-              data={[["Label","score"],...data.histogramm_data]}
-              options={{
-                legend: { position: "none" },
-              }}/>
+      {loading && <div className="flex justify-center items-center mt-12">
+        <Loading/>
         </div>}
-        <div className='space-y-4'>
-         { data.top_comments.length > 0 && <details className='p-4 bg-gray-50 rounded text-gray-700'>
-            <summary className='cursor-pointer'>Top 5 best comments based on polarity score</summary>
-            <ul className='p-4 space-y-2'>
-              {data.top_comments.map((c,i)=>{
-                return <li key={i} className="bg-white p-2 rounded">
-                  <p>
-                  {c["comment"].length < 100 ? c["comment"]:c["comment"].substring(0,100) + " ..."}
-                  </p>
-                  <div className='flex items-center justify-end space-x-4 mt-4'>
-                    <div className='flex items-center space-x-2'>
-                      <span>{c["Positive"]}%</span>
-                      <AiFillLike color='#1ba39c'/>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <span>{c["Negative"]}%</span>
-                      <AiFillDislike color='#96281b'/>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <span>{c["Neutral"]}%</span>
-                      <BsFillEmojiNeutralFill color='#bd9b19'/>
-                    </div>
-                  </div>
-                </li>
-              })}
-            </ul>
-          </details>}
-          {data.worse_comments.length > 0 && <details className='p-4 bg-gray-50 rounded text-gray-700'>
-            <summary className='cursor-pointer'>Top 5 worse comments based on polarity score</summary>
-            <ul className='p-4 space-y-2'>
-              {data.worse_comments.map((c,i)=>{
-                return <li key={i} className="bg-white p-2 rounded">
-                  <p>
-                  {c["comment"].length < 100 ? c["comment"]:c["comment"].substring(0,100) + " ..."}
-                  </p>
-                  <div className='flex items-center justify-end space-x-4 mt-4'>
-                    <div className='flex items-center space-x-2'>
-                      <span>{c["Positive"]}%</span>
-                      <AiFillLike color='#1ba39c'/>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <span>{c["Negative"]}%</span>
-                      <AiFillDislike color='#96281b'/>
-                    </div>
-                    <div className='flex items-center space-x-2'>
-                      <span>{c["Neutral"]}%</span>
-                      <BsFillEmojiNeutralFill color='#bd9b19'/>
-                    </div>
-                  </div>
-                </li>
-              })}
-            </ul>
-          </details>}
-        </div>
-      </main>}
-    </div>
-  )
-}
+      {data != null && (
+        <main className="max-w-4xl m-auto my-20">
+          {data.class == "Positive" && (
+            <Alert color="bg-green-400" msg="Your video was classified as positive"/>
+          )}
+          {data.class == "Negative" && (
+            <Alert color="bg-red-400" msg="Your video was classified as negative"/>
+          )}
+          {data.class == "Neutral" && (
+             <Alert color="bg-blue-400" msg="Your video was classified as neutral"/>
+          )}
 
-export default App
+          {data.bar_chart_data.length > 0 && (
+            <DonutChart heading="Donut Chart showing the polarity labels of comments" data={data.bar_chart_data}/>
+          )}
+          {data.histogramm_data.length > 0 && (
+            <Histogram heading="Distibution of polarity score accross the comments of your video" data={[["Label", "score"], ...data.histogramm_data]}/>
+          )}
+          <div className="space-y-4">
+            {data.top_comments.length > 0 && (
+              <Comments heading="Top 5 best comments based on polarity score" comments={data.top_comments}/>
+            )}
+            {data.worse_comments.length > 0 && (
+              <Comments heading="Top 5 worse comments based on polarity score" comments={data.worse_comments}/>
+            )}
+          </div>
+        </main>
+      )}
+    </div>
+  );
+};
+
+export default App;
